@@ -36,12 +36,31 @@ app.post('/candidate', async (req, res) => {
         const collection1 = db.collection('candidate');
 
         await collection1.insertOne(formData);
-        res.status(200).send('OK');
-        
+        res.status(200);
+
         await client.close();
     } catch (err) {
         console.error('Error:', err);
         res.status(500).send('Internal Server Error');
+    }
+});
+
+// get all api for candidate form
+app.get('/api/candidate', async (req, res) => {
+    const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+
+    try {
+        await client.connect();
+        const db = client.db('recrutory'); 
+        const collection = db.collection('candidate'); 
+
+        const candidate = await collection.find({}).toArray(); // Fetch all blog documents
+        res.json(candidate);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).send('Internal Server Error');
+    } finally {
+        await client.close(); 
     }
 });
 
@@ -59,10 +78,30 @@ app.post('/company', async (req, res) => {
 
         await collection3.insertOne(formData);
         res.status(200).send('OK');
+        
         await client.close();
     } catch (err) {
         console.error('Error:', err);
         res.status(500).send('Internal Server Error');
+    }
+});
+
+// get all api for company data
+app.get('/api/company', async (req, res) => {
+    const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+
+    try {
+        await client.connect();
+        const db = client.db('recrutory'); 
+        const collection = db.collection('customer'); 
+
+        const company = await collection.find({}).toArray(); // Fetch all blog documents
+        res.json(company);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).send('Internal Server Error');
+    } finally {
+        await client.close(); 
     }
 });
 
