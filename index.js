@@ -7,6 +7,7 @@ const cors = require("cors");
 const { default: mongoose } = require("mongoose");
 const moment = require("moment");
 const { v2: cloudinary } = require("cloudinary");
+const compression = require('compression');
 
 cloudinary.config({
   cloud_name: "dgvbilofn",
@@ -18,6 +19,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static("public"));
 app.use(cors());
+app.use(compression());
+
 
 const mongoURI =
   "mongodb+srv://vaibhav:1234@cluster0.24ik1dr.mongodb.net/recrutory?retryWrites=true&w=majority&appName=Cluster0";
@@ -44,95 +47,98 @@ app.get("/msgCheck", (req, res) => {
 });
 
 // post api for Candidate form
-// app.post("/candidate", upload.single("uploadFile"), async (req, res) => {
-//   try {
-//     const formData = req.body;
-//     const files = req.files;
-//     let cvUrl;
-//     formData.timestamp = moment().format("YYYY-MM-DD HH:mm:ss");
-
-//     const baseName = `${formData.name}`.replace(/ /g, '_');
-
-//     if (files) {
-//       const cv = files;
-//       const cloudinaryUploadCVResult = await cloudinary.uploader.upload(
-//         cv.path,
-//         { resource_type: "raw", public_id: `cv_${baseName}` }
-//       );
-//       cvUrl = cloudinaryUploadCVResult.url;
+// app.post("/candidate", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { name: 'uploadCV', maxCount: 1 }]), async (req, res) => {
+//     try {
+//         const formData = req.body;
+//         const files = req.files;
+//         let imageUrl, cvUrl;
+  
+//         // Construct file base name using firstName and lastName
+//         const baseName = `${formData.name}`.replace(/ /g, '_');
+  
+//         // Upload photo to Cloudinary
+//         if (files.uploadPhoto) {
+//             const photo = files.uploadPhoto[0];
+//             const cloudinaryUploadPhotoResult = await cloudinary.uploader.upload(
+//                 photo.path,
+//                 { public_id: `cv_${baseName}` }
+//             );
+//             imageUrl = cloudinaryUploadPhotoResult.url;
+//         }
+  
+//         const client = new MongoClient(mongoURI, {
+//             useNewUrlParser: true,
+//             useUnifiedTopology: true,
+//         });
+  
+//         await client.connect();
+//         const db = client.db("recrutory");
+//         const collection = db.collection("candidate");
+  
+//         // Prepare data to be saved 
+//         const dataToSave = {
+//             date: moment().format("YYYY-MM-DD HH:mm:ss"),
+//             ...formData,
+//             cv: imageUrl,
+//             remarks: ""
+//         };
+  
+//         await collection.insertOne(dataToSave);
+//         res.status(200).send('OK');
+//     } catch (err) {
+//         console.error("Error:", err);
+//         res.status(500).send(err);
 //     }
-
-//     const client = new MongoClient(mongoURI, {
-//       useNewUrlParser: true,
-//       useUnifiedTopology: true,
-//     });
-//     await client.connect();
-
-//     const db = client.db("recrutory");
-//     const collection1 = db.collection("candidate");
-
-//     const dataToSave = {
-//         ...formData,
-//         uploadFile: cvUrl,
-//         remarks: ""
-//     };
-
-//     await collection1.insertOne(dataToSave);
-//     res.status(200);
-
-//     await client.close();
-//   } catch (err) {
-//     console.error("Error:", err);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });
-
-app.post("/candidate", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { name: 'uploadCV', maxCount: 1 }]), async (req, res) => {
-    try {
-        const formData = req.body;
-        const files = req.files;
-        let imageUrl, cvUrl;
-  
-        // Construct file base name using firstName and lastName
-        const baseName = `${formData.name}`.replace(/ /g, '_');
-  
-        // Upload photo to Cloudinary
-        if (files.uploadPhoto) {
-            const photo = files.uploadPhoto[0];
-            const cloudinaryUploadPhotoResult = await cloudinary.uploader.upload(
-                photo.path,
-                { public_id: `cv_${baseName}` }
-            );
-            imageUrl = cloudinaryUploadPhotoResult.url;
-        }
-  
-        const client = new MongoClient(mongoURI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-  
-        await client.connect();
-        const db = client.db("recrutory");
-        const collection = db.collection("candidate");
-  
-        // Prepare data to be saved
-        const dataToSave = {
-            date: moment().format("YYYY-MM-DD HH:mm:ss"),
-            ...formData,
-            cv: imageUrl,
-            remarks: ""
-        };
-  
-        await collection.insertOne(dataToSave);
-        res.status(200).send('OK');
-    } catch (err) {
-        console.error("Error:", err);
-        res.status(500).send("Internal Server Error");
-    }
-  });
+//   });
 
 
 // get all api for candidate form
+
+app.post("/candidate", upload.single('uploadPhoto'), async (req, res) => {
+  try {
+      const formData = req.body;
+      const file = req.file;
+      let imageUrl;
+
+      // Check if uploadPhoto file is present
+      if (file) {
+          // Construct file base name using firstName and lastName
+          const baseName = `${formData.name}`.replace(/ /g, '_');
+
+          // Upload photo to Cloudinary
+          const cloudinaryUploadPhotoResult = await cloudinary.uploader.upload(
+              file.path,
+              { public_id: `cv_${baseName}` }
+          );
+          imageUrl = cloudinaryUploadPhotoResult.url;
+      }
+
+      const client = new MongoClient(mongoURI, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+      });
+
+      await client.connect();
+      const db = client.db("recrutory");
+      const collection = db.collection("candidate");
+
+      // Prepare data to be saved 
+      const dataToSave = {
+          date: moment().format("YYYY-MM-DD HH:mm:ss"),
+          ...formData,
+          cv: imageUrl,
+          remarks: ""
+      };
+
+      await collection.insertOne(dataToSave);
+      res.status(200).send('OK');
+  } catch (err) {
+      console.error("Error:", err);
+      res.status(500).send(err);
+  }
+});
+
+
 app.get("/api/candidate", async (req, res) => {
   const client = new MongoClient(mongoURI, {
     useNewUrlParser: true,
@@ -290,6 +296,10 @@ app.patch("/api/company/remarks/:id", async (req, res) => {
       .json({ error: "Could not update the data", details: err.message });
   }
 });
+
+
+// making api for login functionality
+
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
